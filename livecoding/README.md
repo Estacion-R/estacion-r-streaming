@@ -36,6 +36,7 @@ in RStudio and run the `livecode()` function:
 ``` r
 # Broadcast the currently active RStudio source file.
 livecoding::livecode()
+# Run `livecoding::join("session_id_here")`.
 ```
 
 This will create a new GitHub Gist and print a command for participants
@@ -44,13 +45,11 @@ to join your session.
 ### Joining a Session
 
 If you are a participant, you can join a live coding session using the
-`join()` function, providing the broadcaster’s GitHub username and the
-Gist ID:
+`join()` function, providing the broadcaster’s session ID:
 
 ``` r
-# Example: Join a session where 'broadcaster_username' is the GitHub user
-# and 'gist_id_here' is the ID of the shared Gist.
-livecoding::join(owner = "broadcaster_username", gist_id = "gist_id_here")
+# Example: Join a session where 'session_id_here' is the ID of the shared live coding session.
+livecoding::join(session_id = "session_id_here")
 ```
 
 Your RStudio session will then automatically update with the
