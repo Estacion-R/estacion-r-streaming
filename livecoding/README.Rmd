@@ -1,0 +1,65 @@
+---
+output: github_document
+---
+
+# livecoding
+
+Live Coding for RStudio
+
+<!-- badges: start -->
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+<!-- badges: end -->
+
+## Overview
+
+`livecoding` is an R package designed to facilitate real-time live coding sessions directly within RStudio. It allows a broadcaster to share their code changes instantly via a GitHub Gist, while participants can join and follow along in their own RStudio sessions.
+
+## Installation
+
+You can install the development version of `livecoding` from GitHub with:
+
+```r
+# install.packages("remotes")
+remotes::install_github("Estacion-R/estacion-r-streaming/livecoding")
+```
+
+## Usage
+
+### Broadcasting a Session
+
+To start a live coding session, open the R script you wish to broadcast in RStudio and run the `livecode()` function:
+
+```r
+# Broadcast the currently active RStudio source file.
+livecoding::livecode()
+```
+
+This will create a new GitHub Gist and print a command for participants to join your session.
+
+### Joining a Session
+
+If you are a participant, you can join a live coding session using the `join()` function, providing the broadcaster's GitHub username and the Gist ID:
+
+```r
+# Example: Join a session where 'broadcaster_username' is the GitHub user
+# and 'gist_id_here' is the ID of the shared Gist.
+livecoding::join(owner = "broadcaster_username", gist_id = "gist_id_here")
+```
+
+Your RStudio session will then automatically update with the broadcaster's code changes.
+
+## Setup: GitHub Personal Access Token (PAT)
+
+To broadcast a session (using `livecode()`), you need a GitHub Personal Access Token (PAT) with `gist` scope. It is recommended to set this as an environment variable named `GITHUB_PAT`. You can add the following line to your `~/.Renviron` file (and restart R):
+
+```
+GITHUB_PAT="YOUR_GITHUB_PAT_HERE"
+```
+
+Replace `YOUR_GITHUB_PAT_HERE` with your actual PAT.
+
+## Reporting Issues
+
+If you encounter any bugs or have feature requests, please report them on the [GitHub issue tracker](https://github.com/Estacion-R/estacion-r-streaming/issues).
+
+
