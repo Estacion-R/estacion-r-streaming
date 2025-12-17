@@ -22,6 +22,9 @@ loop. Default is `360` (30 minutes of running).}
 
 \item{clean_up}{Whether to delete the gist when the livecoding ends.}
 }
+\value{
+No return value. Called for its side effects.
+}
 \description{
 Continuously monitors the active RStudio source file and pushes changes to a GitHub Gist for
 live broadcasting.

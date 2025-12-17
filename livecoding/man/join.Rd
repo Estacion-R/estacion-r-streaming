@@ -4,12 +4,10 @@
 \alias{join}
 \title{Join a Live Coding Session}
 \usage{
-join(owner, gist_id, refresh_rate = 5, stop_after = 360)
+join(session_id, refresh_rate = 5, stop_after = 360)
 }
 \arguments{
-\item{owner}{The GitHub username of the broadcaster.}
-
-\item{gist_id}{The ID of the gist being broadcasted. This is provided by the broadcaster.}
+\item{session_id}{The ID of the session being broadcasted. This is provided by the broadcaster.}
 
 \item{refresh_rate}{Time in seconds between refreshes. Default is `5`.}
 
