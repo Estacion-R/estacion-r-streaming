@@ -32,7 +32,7 @@ To start a live coding session, open the R script you wish to broadcast in RStud
 ```r
 # Broadcast the currently active RStudio source file.
 livecoding::livecode()
-# Run `livecoding::join("session_id_here")`.
+#> Run `livecoding::join("session_id_here")`.
 ```
 
 This will create a new GitHub Gist and print a command for participants to join your session.

@@ -36,7 +36,7 @@ in RStudio and run the `livecode()` function:
 ``` r
 # Broadcast the currently active RStudio source file.
 livecoding::livecode()
-# Run `livecoding::join("session_id_here")`.
+#> Run `livecoding::join("session_id_here")`.
 ```
 
 This will create a new GitHub Gist and print a command for participants
