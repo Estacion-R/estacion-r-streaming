@@ -23,6 +23,12 @@ Tenés dos opciones:
 1.  **Traé tu caso**: Completá el formulario con tu duda para que sea resuelta en vivo.
 2.  **Vení a aprender**: Sumate como oyente para ver cómo se codea profesionalmente.
 
+## 📚 Sesiones
+
+| # | Fecha | Tema | Notas |
+|---|-------|------|-------|
+| 1 | 18/12/2025 | Visualización de datos geoespaciales | [Ver resumen](sesiones/sesion_1.md) |
+
 ## 🚀 Este proyecto
 Impulsado junto a Cancu Rodriguez [(@CancuCS)](https://x.com/CancuCS), nace de una convicción: somos comunidad. Hemos crecido gracias al código abierto y al conocimiento compartido, y queremos que eso siga sucediendo en nuestros andenes.
 
