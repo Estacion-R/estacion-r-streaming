@@ -48,13 +48,13 @@ Gerardo trabaja con series multitemporales de imágenes satelitales (archivos TI
 - **Ordenar librerías alfabéticamente** para mejorar la legibilidad del código
 - **Mover la consola de RStudio a la derecha** para mejor organización del espacio de trabajo
 - **Usar `theme_void()`** para limpiar el fondo en visualizaciones de mapas
-- **Consultar IA desde RStudio** sin salir del IDE (usando paquetes como `myrobs`)
+- **Consultar IA desde RStudio** sin salir del IDE (usando paquetes como `myownrobs`)
 
 ---
 
 ## Momento IA
 
-Cancu demostró cómo consultar asistentes de IA directamente desde RStudio usando [`myrobs`](https://github.com/jcrodriguez1989/myrobs) (My R Obsession), un paquete desarrollado por él mismo que fue presentado en [LatinR](https://latinr.org/). Este paquete permite interactuar con modelos de lenguaje sin salir del IDE.
+Cancu demostró cómo consultar asistentes de IA directamente desde RStudio usando [`myownrobs`](https://github.com/MyOwnRobs/myownrobs), un paquete desarrollado por él mismo que fue presentado en [LatinR](https://latinr.org/). Este paquete permite interactuar con modelos de lenguaje sin salir del IDE.
 
 La IA generó código funcional pero excesivamente complejo para la tarea.
 
