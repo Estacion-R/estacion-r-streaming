@@ -1,0 +1,141 @@
+---
+params:
+  locale: !expr Sys.setlocale("LC_TIME", "es_ES.UTF-8")
+  last_month: NULL
+  pkgs_of_month: data.frame()
+  preselection_replies: list()
+  top_pkgs: NULL
+  final_selection_replies: NULL
+  all_scores: NULL
+title: Top 10 Nuevos Paquetes de CRAN `r tools::toTitleCase(format(lubridate::as_date(params$last_month), "%B %Y"))`
+author: "Claude, Gemini y OpenAI"
+format:
+  html:
+    toc: true
+    toc-title: "Contenido"
+    embed-resources: true
+editor: source
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+p_last_month <- lubridate::as_date(params$last_month)
+p_pkgs_of_month <- as.data.frame(params$pkgs_of_month)
+p_preselection_replies <- params$preselection_replies
+preselection <- lapply(p_preselection_replies, function(x) {
+  jsonlite::fromJSON(gsub("\\].*", "]", gsub(".*\\[", "[", x$reply)))
+})
+p_top_pkgs <- params$top_pkgs
+p_final_selection_replies <- params$final_selection_replies
+final_selection <- lapply(p_final_selection_replies, function(x) {
+  jsonlite::fromJSON(gsub("\\].*", "]", gsub(".*\\[", "[", x$reply)))
+})
+p_all_scores <- as.data.frame(params$all_scores)
+```
+
+## Introducción
+
+Este reporte presenta una selección de los 10 mejores paquetes de R publicados en CRAN durante `r format(p_last_month, "%B")` de `r format(p_last_month, "%Y")`. De un total de `r nrow(p_pkgs_of_month)` paquetes nuevos, se utilizó un proceso de dos fases con tres modelos de lenguaje grandes (LLMs) para llegar a la selección final.
+
+## Proceso de Selección
+
+### Preselección
+
+Inicialmente, cada LLM preseleccionó `r length(preselection[[1]])` paquetes basándose únicamente en sus nombres y títulos. Este proceso redujo el campo a `r length(p_top_pkgs)` paquetes candidatos únicos.
+
+#### Paquetes Preseleccionados por LLM
+
+```{r preselections}
+knitr::kable(
+  dplyr::bind_rows(preselection),
+  col.names = names(preselection),
+  caption = "Paquetes preseleccionados por cada LLM."
+)
+```
+
+### Coincidencias en la Preselección
+
+La siguiente tabla muestra la frecuencia con la que los paquetes fueron seleccionados por los diferentes LLMs en la fase de preselección.
+
+```{r coincidences}
+coincidences_table <- dplyr::arrange(as.data.frame(table(unlist(preselection))), dplyr::desc(Freq), Var1) |>
+  setNames(c("Paquetes", "Frecuencia")) |>
+  head(n = 20)
+knitr::kable(coincidences_table, caption = "Top 20 de paquetes con más coincidencias en la preselección.")
+```
+
+## Resultados Finales
+
+Después de la preselección, cada LLM evaluó en detalle los `r length(p_top_pkgs)` paquetes, analizando sus páginas de CRAN y archivos README. A partir de esta evaluación, se generó un ranking final. La siguiente tabla muestra el top 10, con la posición asignada por cada LLM y una posición media.
+
+```{r results}
+results_table <- dplyr::transmute(
+  p_all_scores,
+  Paquete = package,
+  `Posición Media` = round(position, 2),
+  Claude,
+  Gemini,
+  OpenAI
+) |>
+  head(n = 10)
+knitr::kable(results_table, caption = "Top 10 de nuevos paquetes de CRAN.")
+```
+
+## Apéndice
+
+### Costos de LLM
+
+```{r costs_calculation}
+preselection_costs <- sapply(p_preselection_replies, function(x) x$cost)
+final_selection_costs <- sapply(p_final_selection_replies, function(x) x$cost)
+costs <- lapply(
+  names(preselection_costs),
+  function(llm) round(preselection_costs[[llm]] + final_selection_costs[[llm]], 2)
+) |>
+  setNames(names(preselection_costs))
+```
+
+El costo total para generar este reporte, utilizando las APIs de los diferentes LLMs, fue de **$`r sum(unlist(costs))`**.
+
+```{r costs}
+costs_df <- data.frame(
+  LLM = names(costs),
+  Costo = paste0("$", unlist(costs))
+)
+knitr::kable(costs_df, caption = "Desglose de costos por LLM.")
+```
+
+### Decisiones Finales de los LLM
+
+A continuación se muestran las respuestas JSON crudas de cada LLM con su ranking final.
+
+```{r final_desitions, results='asis'}
+for (llm_name in names(p_final_selection_replies)) {
+  cat(paste0("#### ", llm_name, "\n\n"))
+  cat(paste0(p_final_selection_replies[[llm_name]]$reply, "\n\n"))
+}
+```
+
+### Visualización del Ranking
+
+El siguiente gráfico de calor visualiza los rankings de todos los paquetes evaluados en la fase final. Los colores más claros (verde) indican una mejor posición en el ranking, mientras que los más oscuros (rojo) indican una peor posición. Esto ayuda a identificar rápidamente si un paquete con una puntuación baja tiene un número elevado de descargas, lo que podría indicar un interés particular de la comunidad a pesar de la evaluación de los LLMs. La columna `DailyDownloads` representa el promedio de descargas diarias calculado sobre el total de días que el paquete ha estado publicado, en caso de que su lanzamiento haya ocurrido durante los últimos días del mes.
+
+```{r final_plot, fig.cap="Visualización de los rankings de los paquetes."}
+plot_data <- dplyr::transmute(p_all_scores, package, Position = position, Claude, Gemini, OpenAI, Downloads = downloads, DailyDownloads = daily_downloads_mean)
+tidyr::pivot_longer(plot_data, cols = -package) |>
+  dplyr::group_by(name) |>
+  dplyr::mutate(value = (value - min(value, na.rm = TRUE)) / (max(value, na.rm = TRUE) - min(value, na.rm = TRUE)), .groups = "drop") |>
+  dplyr::mutate(
+    name = gsub("^position$", "Position", name)
+  ) |>
+  dplyr::mutate(
+    name = factor(name, levels = setdiff(colnames(plot_data), "package")),
+    package = factor(package, levels = rev(plot_data$package)),
+  ) |>
+  ggplot2::ggplot(ggplot2::aes(x = name, y = package, fill = value)) +
+  ggplot2::geom_tile(color = "white", linewidth = 0.5) +
+  ggplot2::scale_fill_gradient(low = "green", high = "red", name = "Valor Normalizado", na.value = "grey50") +
+  ggplot2::theme_minimal() +
+  ggplot2::theme(legend.position = "bottom") +
+  ggplot2::labs(x = "Métrica", y = "Paquete")
+```
