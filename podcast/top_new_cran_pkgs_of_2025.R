@@ -1,19 +1,17 @@
 box::use(
   cranlogs[cran_downloads],
   dplyr[
-    add_count, arrange, desc, filter, group_by, left_join, mutate, row_number, rowwise, select,
-    summarise
+    add_count, arrange, desc, distinct, filter, group_by, left_join, mutate, row_number, rowwise,
+    select, summarise
   ],
   ellmer[chat_claude, chat_google_gemini, chat_openai, params],
-  ggplot2[aes, geom_tile, ggplot, scale_fill_gradient],
+  ggplot2[aes, geom_bar, geom_tile, ggplot, scale_fill_gradient],
   jsonlite[fromJSON, toJSON],
-  lubridate[`%m-%`, as_date, ceiling_date, floor_date, month, today, wday, year],
+  lubridate[as_date, floor_date],
   purrr[map_dfr],
-  rvest[html_elements, html_table, html_text, read_html],
+  rvest[html_element, html_elements, html_table, html_text, read_html],
   tidyr[pivot_longer, pivot_wider]
 )
-
-(last_month <- floor_date(`%m-%`(today(), months(1)), "month"))
 
 ### Setear LLMs.
 # Crear nuevas instancias de LLM para que tengamos sesiones de chat vacías.
@@ -44,7 +42,7 @@ ask_llms <- function(prompt) {
   })
 }
 
-### Obtener paquetes publicados el mes pasado.
+### Obtener paquetes publicados el 2025.
 packages <- read_html(
   # Aquí se obtiene la fecha de actualización de cada paquete (no la fecha de lanzamiento).
   "https://cran.r-project.org/web/packages/available_packages_by_date.html"
@@ -57,21 +55,35 @@ packages <- mutate(
     "https://cran.r-project.org/web/packages/", Package, "/readme/README.html"
   )
 )
-cranberries <- paste0("https://dirk.eddelbuettel.com/cranberries/", format(last_month, "%Y/%m")) |>
-  read_html() |>
+cranberries <- read_html("https://dirk.eddelbuettel.com/cranberries/2025/") |>
   html_elements(".package") |>
-  html_elements("b") |>
-  html_text()
-new_pkgs <- gsub(
-  " .*", "", gsub("^New package ", "", cranberries[grepl("^New package ", cranberries)])
-)
-pkgs_of_month <- filter(packages, Package %in% new_pkgs)
-cat("Se encontraron", nrow(pkgs_of_month), "paquetes nuevos para", format(last_month, "%B"), ".")
+  map_dfr(function(elem) {
+    data.frame(
+      Package = html_text(html_elements(elem, "b")),
+      ReleaseDate = html_text(html_element(
+        elem,
+        xpath = ".//strong[contains(., 'Date/Publication')]/following-sibling::text()[1]"
+      ))
+    )
+  }) |>
+  filter(grepl("^New package ", Package)) |>
+  mutate(
+    Package = gsub(" .*", "", gsub("^New package ", "", Package)),
+    ReleaseDate = as_date(ReleaseDate)
+  ) |>
+  # Discard duplicates (it happens with some pkgs).
+  arrange(ReleaseDate) |>
+  distinct(Package, .keep_all = TRUE)
+mutate(cranberries, ReleaseMonth = floor_date(ReleaseDate, "month")) |>
+  ggplot(aes(x = ReleaseMonth)) +
+  geom_bar()
+pkgs_of_year <- filter(packages, Package %in% cranberries$Package)
+cat("Se encontraron", nrow(pkgs_of_year), "paquetes nuevos para 2025.")
 
 ### Obtener número de descargas por paquete.
-downloads <- cran_downloads(
-  pkgs_of_month$Package,
-  from = as.character(last_month), to = as.character(ceiling_date(last_month, "month") - 1)
+downloads <- map_dfr(
+  split(pkgs_of_year$Package, ceiling(seq_along(pkgs_of_year$Package) / 100)),
+  function(pkgs) cran_downloads(pkgs, from = "2025-01-01", to = "2025-12-31")
 ) |>
   filter(count > 0) |>
   group_by(package) |>
@@ -79,38 +91,30 @@ downloads <- cran_downloads(
   arrange(desc(downloads))
 downloads
 
-### Pedir a los LLM que preseleccionen los mejores paquetes por nombre y título.
-# Esto se debe a que si no preseleccionamos, entonces tenemos alrededor de 250 paquetes para leer
-# páginas y enviar a LLM (podríamos hacerlo con el total de todos modos).
-preselect_n <- 25
-prompt <- paste0(
-  "De la lista de paquetes que te doy, debes hacer un pre-filtrado de ", preselect_n, " paquetes. ",
-  "Devuelveme solo el nombre de los paquetes de los cuales te gustaria obtener mas informacion. ",
-  'Da tu respuesta en formato JSON (`["PAQ_1", ..., "PAQ_N"]`).',
-  "Esta es la lista de los paquetes que puedes seleccionar ",
-  "(los paquetes que elijas, deben estar en esta lista (como campo `Package`):\n",
-  "```json\n",
-  toJSON(select(pkgs_of_month, Package, Title)),
-  "\n```"
+### Obtener el top-10 de cada mes.
+dates <- format(
+  seq.Date(as_date("2025-01-01"), as_date("2025-12-01"), by = "month"),
+  "%Y%m"
 )
-
-preselection_replies <- ask_llms(prompt)
-sapply(preselection_replies, function(x) x$cost)
-preselection <- lapply(preselection_replies, function(x) {
-  unique(fromJSON(gsub("\\].*", "]", gsub(".*\\[", "[", x$reply))))
+top_pkgs <- map_dfr(dates, function(date) {
+  page <- read_html(paste0("podcast/top_new_cran_pkgs_", date, ".html"))
+  html_element(page, "#resultados-finales") |>
+    html_table() |>
+    mutate(Fecha = date)
 })
-stopifnot(all(sapply(preselection, length) == preselect_n))
-
-arrange(as.data.frame(table(unlist(preselection))), desc(Freq), Var1) |>
-  setNames(c("Paquetes", "Frecuencia")) |>
-  head(n = 20)
-top_pkgs <- filter(pkgs_of_month, Package %in% unlist(preselection))
-cat("Preselección:", nrow(top_pkgs), "paquetes de un total de", nrow(pkgs_of_month), ".")
 
 ### Leer la página de cada paquete y su README.
 read_page <- function(url) {
   tryCatch(html_text(read_html(url)), error = function(e) NA_character_)
 }
+
+top_pkgs <- mutate(
+  top_pkgs,
+  url = paste0("https://cran.r-project.org/web/packages/", Paquete, "/index.html"),
+  readme_url = paste0(
+    "https://cran.r-project.org/web/packages/", Paquete, "/readme/README.html"
+  )
+)
 system.time({
   top_pkgs <- mutate(
     rowwise(top_pkgs),
@@ -128,23 +132,23 @@ final_prompt <- paste0(
   "Esta es la lista de los paquetes que puedes seleccionar ",
   "(los paquetes que elijas, deben estar en esta lista (como campo `Package`):\n",
   "```json\n",
-  toJSON(select(top_pkgs, Package, Title, page_content, readme_content)),
+  toJSON(select(top_pkgs, Paquete, page_content, readme_content)),
   "\n```"
 )
 
 final_selection_replies <- ask_llms(final_prompt)
 sapply(final_selection_replies, function(x) x$cost)
 final_selection <- lapply(final_selection_replies, function(x) {
-  intersect(fromJSON(gsub("\\].*", "]", gsub(".*\\[", "[", x$reply))), top_pkgs$Package)
+  intersect(fromJSON(gsub("\\].*", "]", gsub(".*\\[", "[", x$reply))), top_pkgs$Paquete)
 })
 # A veces los modelos dejan algunos paquetes sin evaluar, veamos si al menos ordenaron el 75%.
 sapply(final_selection, length)
 stopifnot(all(sapply(final_selection, length) >= nrow(top_pkgs) * .75))
 # Chequear que todos hayan sido evaluados por al menos una IA.
-stopifnot(all(top_pkgs$Package %in% unlist(final_selection)))
+stopifnot(all(top_pkgs$Paquete %in% unlist(final_selection)))
 # Para cada modelo, agreguemos los paquetes que no rankearon.
 final_selection <- lapply(final_selection, function(llm_selection) {
-  c(llm_selection, sort(setdiff(top_pkgs$Package, llm_selection)))
+  c(llm_selection, sort(setdiff(top_pkgs$Paquete, llm_selection)))
 })
 
 ### Consolidación de resultados.
@@ -182,16 +186,3 @@ pivot_longer(all_scores, cols = -package) |>
 
 all_scores
 arrange(all_scores, desc(daily_downloads_mean))
-
-quarto::quarto_render(
-  "podcast/top_new_cran_pkgs.qmd",
-  output_file = paste0("top_new_cran_pkgs_", format(last_month, "%Y%m"), ".html"),
-  execute_params = list(
-    last_month = as.character(last_month),
-    pkgs_of_month = pkgs_of_month,
-    preselection_replies = preselection_replies,
-    top_pkgs = top_pkgs$Package,
-    final_selection_replies = final_selection_replies,
-    all_scores = all_scores
-  )
-)
