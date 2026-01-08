@@ -21,6 +21,8 @@
 create_gist <- function(files, description = NULL, public = TRUE,
                         github_pat = Sys.getenv("GITHUB_PAT")) {
   gist_files <- lapply(files, function(content) {
+    # Fixing: If the file is empty, it Gist API would fail.
+    if (isTRUE(content == "")) content <- "NULL"
     list(content = paste(content, sep = "\n", collapse = "\n"))
   })
   response <- POST(

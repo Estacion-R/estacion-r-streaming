@@ -17,6 +17,9 @@
 livecode <- function(refresh_rate = 5, stop_after = 360, clean_up = TRUE) {
   tmp_file <- tempfile("livecoding_", fileext = ".R")
   context <- getSourceEditorContext()
+  if (is.null(context)) {
+    stop("Please open a file in RStudio to livecode.")
+  }
   writeLines(paste0(
     "livecoding:::livecode_script(",
     'context_id = "', context$id, '", ',

@@ -139,7 +139,9 @@ final_selection <- lapply(final_selection_replies, function(x) {
 })
 # A veces los modelos dejan algunos paquetes sin evaluar, veamos si al menos ordenaron el 75%.
 sapply(final_selection, length)
-stopifnot(all(sapply(final_selection, length) >= nrow(top_pkgs) * .75))
+stopifnot(all(sapply(
+  final_selection, function(x) length(intersect(top_pkgs$Package, x))
+) >= nrow(top_pkgs) * .75))
 # Chequear que todos hayan sido evaluados por al menos una IA.
 stopifnot(all(top_pkgs$Package %in% unlist(final_selection)))
 # Para cada modelo, agreguemos los paquetes que no rankearon.
