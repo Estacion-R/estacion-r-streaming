@@ -112,7 +112,7 @@ downloads
 ### Obtener el top-10 de cada mes.
 dates <- format(seq.Date(as_date("2025-01-01"), as_date("2025-12-01"), by = "month"), "%Y%m")
 pkgs_of_year <- map_dfr(dates, function(date) {
-  page <- read_html(paste0("podcast/top_new_cran_pkgs_", date, ".html"))
+  page <- read_html(paste0("podcast/outputs/top_new_cran_pkgs_", date, ".html"))
   html_element(page, "#resultados-finales") |>
     html_table() |>
     mutate(Fecha = date)

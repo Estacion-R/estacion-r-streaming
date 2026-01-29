@@ -187,7 +187,7 @@ arrange(all_scores, desc(daily_downloads_mean))
 
 quarto::quarto_render(
   "podcast/top_new_cran_pkgs.qmd",
-  output_file = paste0("top_new_cran_pkgs_", format(last_month, "%Y%m"), ".html"),
+  output_file = paste0("outputs/top_new_cran_pkgs_", format(last_month, "%Y%m"), ".html"),
   execute_params = list(
     last_month = as.character(last_month),
     pkgs_of_month = pkgs_of_month,
