@@ -28,6 +28,7 @@ Tenés dos opciones:
 | # | Fecha | Tema | Notas |
 |---|-------|------|-------|
 | 1 | 18/12/2025 | Visualización de datos geoespaciales | [Ver resumen](sesiones/sesion_1.md) |
+| 2 | 08/01/2026 | LLMs en R con {ellmer} | [Ver resumen](consultorio/20260108/README.md) |
 
 ## 🚀 Este proyecto
 Impulsado junto a Cancu Rodriguez [(@CancuCS)](https://x.com/CancuCS), nace de una convicción: somos comunidad. Hemos crecido gracias al código abierto y al conocimiento compartido, y queremos que eso siga sucediendo en nuestros andenes.
