@@ -146,6 +146,7 @@ stopifnot(all(sapply(
 stopifnot(all(top_pkgs$Package %in% unlist(final_selection)))
 # Para cada modelo, agreguemos los paquetes que no rankearon.
 final_selection <- lapply(final_selection, function(llm_selection) {
+  print(setdiff(top_pkgs$Package, llm_selection))
   c(llm_selection, sort(setdiff(top_pkgs$Package, llm_selection)))
 })
 
@@ -185,9 +186,10 @@ pivot_longer(all_scores, cols = -package) |>
 all_scores
 arrange(all_scores, desc(daily_downloads_mean))
 
+output_file <- paste0("top_new_cran_pkgs_", format(last_month, "%Y%m"), ".html")
 quarto::quarto_render(
   "podcast/top_new_cran_pkgs.qmd",
-  output_file = paste0("outputs/top_new_cran_pkgs_", format(last_month, "%Y%m"), ".html"),
+  output_file = output_file,
   execute_params = list(
     last_month = as.character(last_month),
     pkgs_of_month = pkgs_of_month,
@@ -197,3 +199,4 @@ quarto::quarto_render(
     all_scores = all_scores
   )
 )
+file.rename(paste0("podcast/", output_file), paste0("podcast/outputs/", output_file))
