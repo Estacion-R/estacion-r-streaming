@@ -26,7 +26,7 @@ ask_llms <- function(prompt) {
     # Claude no soporta la seed por el momento, igual dejemos el param por si lo hace en un futuro.
     Claude = chat_claude(
       system_prompt,
-      model = "claude-3-haiku-20240307", params = params(seed = 881918)
+      model = "claude-haiku-4-5-20251001", params = params(seed = 881918)
     ),
     Gemini = chat_google_gemini(
       system_prompt,
